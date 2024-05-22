@@ -3,11 +3,13 @@ const express = require('express');
 
 // Utils
 const { swaggerUi, specs } = require("./config/swagger/index");
+const {logger,stream} = require('./utils/logger');
 
 // DB
 
 // Middlewares
 require('dotenv').config();
+const morganMiddleware = require('./middleware/morganMiddleware');
 
 const app = express();
 
@@ -35,7 +37,13 @@ app.get('/', (req, res) => {
 });
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
+app.use(express.json());
+app.use(morganMiddleware);
 
+app.use((err, req, res, next) => {
+  logger.error(`${err.status || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
+  res.status(500).send('Something broke!');
+});
 app.listen(process.env.PORT, () => {
-  console.log('Server is running on port 8080');
+  logger.info('Server is running on port 8080');
 });
